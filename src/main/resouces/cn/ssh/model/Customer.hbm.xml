@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC 
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+    "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+    
+<hibernate-mapping>
+ <!--类名与表名对应-->
+<class name="cn.ssh.model.Customer" table="CST_CUSTOMER">
+<!-- 实体类oid与表名对应 -->
+ <id name="custId" type="java.lang.Long"  >
+    <column name="cust_id"></column>	
+	 <!--那种形式的增长方式-->
+	<generator class="native">
+	</generator>
+ </id>
+ <!--普通数据的对应关系-->
+ <property name="custName" type="string" column="CUST_NAME" ></property>
+ <property name="custUserId" type="java.lang.Long" column="CUST_USER_ID"></property>	
+ <property name="custCreateId" type="java.lang.Long" column="CUST_CREATE_ID"></property>
+ <property name="custIndustry" type="string" column="CUST_INDUSTRY"></property>
+ <property name="custLevel" type="string" column="CUST_LEVEL"></property>
+ <property name="custLinkman" type="string" column="CUST_LINKMAN"></property>
+ <property name="custPhone" type="string" column="CUST_PHONE"></property>
+ <property name="custMobile" type="string" column="CUST_MOBILE"></property>
+</class>
+
+</hibernate-mapping>    

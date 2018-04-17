@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+	http://www.springframework.org/schema/aop
+	http://www.springframework.org/schema/aop/spring-aop-3.2.xsd
+	http://www.springframework.org/schema/tx
+	http://www.springframework.org/schema/tx/spring-tx-3.2.xsd">
+
+
+<!-- 第二种方法,将hibernate的配置信息配置到spring配置文件中统一管理 -->
+<!--一.配置数据源的<bean> 以dbcp为例  -->
+			<!-- 数据源的id --> <!-- 数据源类的完全限定名 -->
+ 	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+ 	<!-- 把数据连接相关的参数配置到数据源的属性中 -->
+ 		<!-- 地址,用户名,密码,驱动 这些基础配置 -->
+ 		<property name="driverClass" value="com.mysql.jdbc.Driver" />
+		<property name="jdbcUrl" value="jdbc:mysql://localhost:3306/ssh" />
+		<property name="user" value="root" />
+		<property name="password" value="123456" />
+
+ 	</bean> 
+
+
+
+<!-- 配置hibernate会话工厂 <bean>-->
+<bean id="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+   <!-- 2.在会话工厂中配置hibernate辅助的参数 -->
+   
+   	<!-- 引入上面的数据源 -->
+	<property name="dataSource" ref="dataSource"></property>
+	
+	<!-- 辅助参数配置 -->
+				 <!-- name为固定写法(此参数是properties的类型的参数) -->
+	<property name="hibernateProperties">
+		<!-- 辅助参数以properties参数注入的方式 -->
+		 	<!-- 所有辅助参数必须恢复完整的状态(hibernate.xxxx) -->
+	 	<props>
+	 			<!-- 方言 -->
+			<prop key="hibernate.dialect" >org.hibernate.dialect.MySQLDialect</prop>
+			
+				<!-- 展示和格式化 sql语句 -->
+			<prop key="hibernate.format_sql">true</prop>
+			<prop key="hibernate.show_sql">true</prop>
+			
+				<!-- 得到线程安全的session对象 -->             <!-- 使用spring来管理线程(默认) -->  
+			<prop key="hibernate.current_session_context_class">org.springframework.orm.hibernate5.SpringSessionContext</prop>
+		</props>
+	</property>
+	
+	
+	
+	<!--3. 引入映射文件的配置(最简单的方法) 自动引入包中的所有的持久化类的hbm.xml文件 --> 
+				<!-- 此参数为字符串数组的参数 需要用list方式注入 -->
+	<property name="mappingDirectoryLocations">
+		<list>
+			<!-- 自动引入po包下所有的映射hbm.xml文件 -->
+			<value>classpath:cn/ssh/model</value>
+		</list>
+	</property>
+</bean>
+
+
+<!-- 省略下面,配置dao类 biz类 事务切面增强等配置,的配置 -->
+
+
+<!-- 二.在spring中配置dao类 -->
+	<!-- 创建dao类实例 -->
+	<bean id="customerDao" class="cn.ssh.dao.impl.CustomerDaoImpl">
+		<property name="sessionFactory" ref="sessionFactory"></property>
+	</bean>
+	
+
+	
+	
+<!-- 三.配置biz层(service)层 -->
+	<bean id="customerService" class="cn.ssh.service.impl.CustomerServiceImpl">
+				<!-- 引用dao类的<bean>实例的id -->
+		<property name="dao" ref="customerDao"></property>
+	</bean>
+
+	
+	
+	
+<!-- 四.给biz(service)层 增加事物切面 -->
+
+	<!-- 配置事物管理器 -->
+	    <!--事物管理器 <bean>的id-->   <!-- 粘贴事物管理器的全类名 --> 
+	<bean id="txMgr" class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+		<!-- 给事物管理器注入会话工厂 -->
+		<!-- name属性为固定的 -->  <!-- ref中为会话工厂实例<bean>的id -->
+		<property name="sessionFactory" ref="sessionFactory"></property>
+	</bean> 
+	
+	<!-- 配置事物切面处理的增强 -->
+	     <!-- 此切面处理增强的id  -->  <!-- 引入事物管理器<bean>的id -->
+	<tx:advice id="txAdvice" transaction-manager="txMgr">
+	
+		<!-- 指定切点方法的处理规则 -->
+		<tx:attributes>
+		
+					<!-- 以find开头的方法的处理规则 -->
+			<tx:method name="find*" read-only="true"/>
+			
+					<!-- 以get开头的方法的处理规则 -->
+			<tx:method name="get*" read-only="true"/>
+			
+					<!-- 切点中其他方法的处理规则 -->
+			<tx:method name="*"/>
+		</tx:attributes>
+	</tx:advice>
+	
+	<!-- 配置aop切点 并将<tx:advice>(事物处理增强) 和切点进行织入  -->
+	<aop:config>
+		<!--定义切点  -->
+										<!-- 表达式 -->						<!-- 切点id -->
+		<aop:pointcut expression="execution(public * cn.ssh.service.impl..*(..))" id="serviceMethod"/>
+		
+		<!--将事物切面的增强与切点结合  进行织入 操作 -->
+					<!-- 引入<tx:advice>的id -->  <!-- 引入<aop:pointcut>的id -->
+		<aop:advisor advice-ref="txAdvice"        pointcut-ref="serviceMethod"/>
+	</aop:config>
+	
+	
+<!--五.当引入struts2和spring plugin jar文件后,
+	在spring配置文件中不需要创建action类的<bean>实例,
+	struts2会按名字自动注入的方式自动注入 与 action 类中属性名字相同的 biz(service)<bean> 的实例
+	
+	{注:(action 类中属性名字与biz(service)<bean>的ID属性值相同)}
+  -->
+  <bean id="customerAction" class="cn.ssh.action.CustomerAction" scope="prototype">
+  	<property name="service" ref="customerService"></property>
+  </bean>
+</beans>

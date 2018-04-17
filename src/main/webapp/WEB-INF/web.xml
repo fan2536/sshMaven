@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" version="2.5">
+
+
+  <display-name>Archetype Created Web Application</display-name>
+  <!-- 在web.xml添加 一个参数,说明spring配置文件放入的位置-->
+  <context-param>
+    <!-- 变量名(固定写法) -->
+    <param-name>contextConfigLocation</param-name>
+    <!-- 变量的值:applicationContext.xml文件放在哪里(多个文件用逗号隔开) -->
+    <param-value>classpath:applicationContext.xml</param-value>
+
+  </context-param>
+
+  <!-- 这个监听器可以随着tomcat的启动运行,来读取配置文件 创建bean 代理 处理事务等-->
+  <listener>
+    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+  </listener>
+
+  <!--配置OpenSessionInViewFilter (放在所有过滤器的最前面) -->
+  <!--保持在需要会话的时候,会话一直是开启的 -->
+  <filter>
+    <filter-name>OpenSessionInViewFilter</filter-name>
+    <filter-class>org.springframework.orm.hibernate5.support.OpenSessionInViewFilter</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>OpenSessionInViewFilter</filter-name>
+    <url-pattern>*</url-pattern>
+  </filter-mapping>
+  <filter>
+    <filter-name>struts2</filter-name>
+    <filter-class>org.apache.struts2.dispatcher.ng.filter.StrutsPrepareAndExecuteFilter</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>struts2</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+  <!--其他配置...-->
+</web-app>
